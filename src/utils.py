@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-Network Scanner - Utility functions
-
-This module contains utility functions for the network scanner,
-such as IP parsing, result formatting, and data export.
-"""
-
 import ipaddress
 import csv
 import json
@@ -13,16 +6,16 @@ import socket
 import os
 from typing import List, Dict, Any, Tuple, Optional
 
-def validate_ip_range(ip_range: str) -> bool:
+def validate_ip_range(iprange: str) -> bool:
     try:
-        ipaddress.ip_network(ip_range, strict=False)
+        ipaddress.ip_network(iprange, strict=False)
         return True
     except ValueError:
         return False
 
-def validate_port_range(port_range: str) -> bool:
+def validate_port_range(portrange: str) -> bool:
     try:
-        for part in port_range.split(","):
+        for part in portrange.split(","):
             part = part.strip()
             if "-" in part:
                 start, end = map(int, part.split("-"))
@@ -36,9 +29,9 @@ def validate_port_range(port_range: str) -> bool:
     except ValueError:
         return False
 
-def parse_port_range(port_range: str) -> List[int]:
+def parse_port_range(portrange: str) -> List[int]:
     ports = []
-    for part in port_range.split(","):
+    for part in portrange.split(","):
         part = part.strip()
         if "-" in part:
             start, end = map(int, part.split("-"))
@@ -71,17 +64,17 @@ def format_results_table(results: List[Dict[str, Any]]) -> str:
         else:
             result["open_ports_str"] = ", ".join(map(str, result["open_ports"]))
 
-    ip_width = max(len("IP Address"), max(len(r["ip"]) for r in results))
-    mac_width = max(len("MAC Address"), max(len(r["mac"]) for r in results))
-    status_width = max(len("Status"), max(len(r["status"]) for r in results))
-    hostname_width = max(len("Hostname"), max(len(r["hostname"]) for r in results))
+    ipwidth = max(len("IP Address"), max(len(r["ip"]) for r in results))
+    macwidth = max(len("MAC Address"), max(len(r["mac"]) for r in results))
+    statuswidth = max(len("Status"), max(len(r["status"]) for r in results))
+    hostnamewidth = max(len("Hostname"), max(len(r["hostname"]) for r in results))
 
-    header = f"{'IP Address':<{ip_width}} | {'MAC Address':<{mac_width}} | {'Status':<{status_width}} | {'Hostname':<{hostname_width}} | Open Ports"
+    header = f"{'IP Address':<{ipwidth}} | {'MAC Address':<{macwidth}} | {'Status':<{statuswidth}} | {'Hostname':<{hostnamewidth}} | Open Ports"
     separator = "-" * len(header)
 
     table = [header, separator]
     for result in results:
-        row = f"{result['ip']:<{ip_width}} | {result['mac']:<{mac_width}} | {result['status']:<{status_width}} | {result['hostname']:<{hostname_width}} | {result['open_ports_str']}"
+        row = f"{result['ip']:<{ipwidth}} | {result['mac']:<{macwidth}} | {result['status']:<{statuswidth}} | {result['hostname']:<{hostnamewidth}} | {result['open_ports_str']}"
         table.append(row)
 
     return "\n".join(table)
@@ -93,28 +86,28 @@ def export_to_csv(results: List[Dict[str, Any]], filename: str) -> None:
         
         writer.writeheader()
         for result in results:
-            result_copy = result.copy()
-            if 'open_ports' in result_copy:
-                result_copy['open_ports'] = ','.join(map(str, result_copy['open_ports']))
-            if 'services' in result_copy:
-                services_str = ';'.join([f"{port}:{service}" for port, service in result_copy['services'].items()])
-                result_copy['services'] = services_str
+            resultcopy = result.copy()
+            if 'open_ports' in resultcopy:
+                resultcopy['open_ports'] = ','.join(map(str, resultcopy['open_ports']))
+            if 'services' in resultcopy:
+                servicesstr = ';'.join([f"{port}:{service}" for port, service in resultcopy['services'].items()])
+                resultcopy['services'] = servicesstr
             
-            writer.writerow(result_copy)
+            writer.writerow(resultcopy)
 
 def export_to_json(results: List[Dict[str, Any]], filename: str) -> None:
     with open(filename, 'w') as f:
         json.dump(results, f, indent=4)
 
 def save_session(results: List[Dict[str, Any]], settings: Dict[str, Any], filename: str) -> None:
-    session_data = {"results": results, "settings": settings}
+    sessiondata = {"results": results, "settings": settings}
     with open(filename, 'w') as f:
-        json.dump(session_data, f, indent=4)
+        json.dump(sessiondata, f, indent=4)
 
 def load_session(filename: str) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     with open(filename, 'r') as f:
-        session_data = json.load(f)
-    return session_data['results'], session_data['settings']
+        sessiondata = json.load(f)
+    return sessiondata['results'], sessiondata['settings']
 
 def get_common_ports() -> Dict[str, List[int]]:
     return {
@@ -132,17 +125,17 @@ def ensure_directory_exists(directory: str) -> None:
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def get_interface_ip(interface_name: str) -> Optional[str]:
+def get_interface_ip(ifacename: str) -> Optional[str]:
     try:
         import netifaces
-        addresses = netifaces.ifaddresses(interface_name)
+        addresses = netifaces.ifaddresses(ifacename)
         if netifaces.AF_INET in addresses:
             return addresses[netifaces.AF_INET][0]['addr']
         return None
     except (ImportError, ValueError):
         import subprocess
         try:
-            output = subprocess.check_output(['ip', 'addr', 'show', interface_name]).decode('utf-8')
+            output = subprocess.check_output(['ip', 'addr', 'show', ifacename]).decode('utf-8')
             for line in output.split('\n'):
                 if 'inet ' in line:
                     return line.split()[1].split('/')[0]
@@ -153,40 +146,40 @@ def get_interface_ip(interface_name: str) -> Optional[str]:
 def get_network_interfaces() -> List[Dict[str, str]]:
     try:
         import netifaces
-        interfaces = []
+        ifaces = []
         for iface in netifaces.interfaces():
             addresses = netifaces.ifaddresses(iface)
             if netifaces.AF_INET in addresses:
                 for addr in addresses[netifaces.AF_INET]:
-                    interfaces.append({
+                    ifaces.append({
                         "name": iface,
                         "ip": addr['addr'],
                         "netmask": addr.get('netmask', 'Unknown')
                     })
-        return interfaces
+        return ifaces
     except ImportError:
         import subprocess
         try:
             output = subprocess.check_output(['ip', 'addr']).decode('utf-8')
-            interfaces = []
-            current_iface = None
+            ifaces = []
+            currentiface = None
             
             for line in output.split('\n'):
-                if line.startswith(' ') and current_iface and 'inet ' in line:
+                if line.startswith(' ') and currentiface and 'inet ' in line:
                     parts = line.strip().split()
-                    ip_with_prefix = parts[1]
-                    ip = ip_with_prefix.split('/')[0]
-                    interfaces.append({
-                        "name": current_iface,
+                    ipprefix = parts[1]
+                    ip = ipprefix.split('/')[0]
+                    ifaces.append({
+                        "name": currentiface,
                         "ip": ip,
                         "netmask": "Unknown"
                     })
                 elif not line.startswith(' '):
                     parts = line.split(':')
                     if len(parts) > 1:
-                        current_iface = parts[1].strip()
+                        currentiface = parts[1].strip()
             
-            return interfaces
+            return ifaces
         except subprocess.SubprocessError:
             return []
 
