@@ -2,7 +2,7 @@
 
 A comprehensive network scanner application for discovering devices, identifying MAC addresses, and detecting open ports within specified IP ranges. Built with Python and Scapy, this tool provides both command-line and graphical interfaces for network discovery and security assessment.
 
-![Network Scanner](https://raw.githubusercontent.com/TheRealSaiTama/NetworkScanner/main/screenshot.png)
+![Network Scanner](https://raw.githubusercontent.com/TheRealSaiTama/NetworkScanner/main/image.png)
 
 ## ✨ Features
 
