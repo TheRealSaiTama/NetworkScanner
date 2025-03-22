@@ -39,84 +39,84 @@ class NetworkScannerGUI:
         self.scan_thread = None
         self.is_scanning = False
         
-        self.create_menu()
-        self.create_main_frame()
+        self.createmenu()
+        self.createmainframe()
         
         ensure_directory_exists("results")
     
-    def create_menu(self):
+    def createmenu(self):
         menubar = tk.Menu(self.root)
         
-        file_menu = tk.Menu(menubar, tearoff=0)
-        file_menu.add_command(label="New Scan", command=self.reset_scan)
-        file_menu.add_command(label="Load Session", command=self.load_session_dialog)
-        file_menu.add_command(label="Save Session", command=self.save_session_dialog)
-        file_menu.add_separator()
-        file_menu.add_command(label="Export Results (CSV)", command=lambda: self.export_results("csv"))
-        file_menu.add_command(label="Export Results (JSON)", command=lambda: self.export_results("json"))
-        file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.root.quit)
-        menubar.add_cascade(label="File", menu=file_menu)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="New Scan", command=self.resetscan)
+        filemenu.add_command(label="Load Session", command=self.loadsessiondialog)
+        filemenu.add_command(label="Save Session", command=self.savesessiondialog)
+        filemenu.add_separator()
+        filemenu.add_command(label="Export Results (CSV)", command=lambda: self.exportresults("csv"))
+        filemenu.add_command(label="Export Results (JSON)", command=lambda: self.exportresults("json"))
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=self.root.quit)
+        menubar.add_cascade(label="File", menu=filemenu)
         
-        view_menu = tk.Menu(menubar, tearoff=0)
-        view_menu.add_command(label="Network Graph", command=self.show_network_graph)
-        view_menu.add_command(label="Port Distribution", command=self.show_port_distribution)
-        menubar.add_cascade(label="View", menu=view_menu)
+        viewmenu = tk.Menu(menubar, tearoff=0)
+        viewmenu.add_command(label="Network Graph", command=self.shownetgraph)
+        viewmenu.add_command(label="Port Distribution", command=self.showportdist)
+        menubar.add_cascade(label="View", menu=viewmenu)
         
-        help_menu = tk.Menu(menubar, tearoff=0)
-        help_menu.add_command(label="About", command=self.show_about)
-        menubar.add_cascade(label="Help", menu=help_menu)
+        helpmenu = tk.Menu(menubar, tearoff=0)
+        helpmenu.add_command(label="About", command=self.showabout)
+        menubar.add_cascade(label="Help", menu=helpmenu)
         
         self.root.config(menu=menubar)
     
-    def create_main_frame(self):
-        main_frame = ttk.Frame(self.root, padding=10)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+    def createmainframe(self):
+        mainframe = ttk.Frame(self.root, padding=10)
+        mainframe.pack(fill=tk.BOTH, expand=True)
         
-        settings_frame = ttk.LabelFrame(main_frame, text="Scan Settings", padding=10)
-        settings_frame.pack(fill=tk.X, pady=5)
+        settingsframe = ttk.LabelFrame(mainframe, text="Scan Settings", padding=10)
+        settingsframe.pack(fill=tk.X, pady=5)
         
-        ttk.Label(settings_frame, text="IP Range:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Entry(settings_frame, textvariable=self.ip_range_var, width=30).grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(settingsframe, text="IP Range:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Entry(settingsframe, textvariable=self.ip_range_var, width=30).grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
         
-        interfaces = get_network_interfaces()
-        if interfaces:
-            ttk.Label(settings_frame, text="Interface:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
-            interface_combo = ttk.Combobox(settings_frame, width=15)
-            interface_combo['values'] = [f"{iface['name']} ({iface['ip']})" for iface in interfaces]
-            interface_combo.grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
-            interface_combo.bind("<<ComboboxSelected>>", self.on_interface_selected)
+        ifaces = get_network_interfaces()
+        if ifaces:
+            ttk.Label(settingsframe, text="Interface:").grid(row=0, column=2, sticky=tk.W, padx=5, pady=5)
+            ifacecombo = ttk.Combobox(settingsframe, width=15)
+            ifacecombo['values'] = [f"{iface['name']} ({iface['ip']})" for iface in ifaces]
+            ifacecombo.grid(row=0, column=3, sticky=tk.W, padx=5, pady=5)
+            ifacecombo.bind("<<ComboboxSelected>>", self.onifaceselected)
         
-        ttk.Label(settings_frame, text="Port Range:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Entry(settings_frame, textvariable=self.port_range_var, width=30).grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
-        ttk.Checkbutton(settings_frame, text="Use Common Ports", variable=self.use_common_ports_var, command=self.toggle_common_ports).grid(row=1, column=2, columnspan=2, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(settingsframe, text="Port Range:").grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Entry(settingsframe, textvariable=self.port_range_var, width=30).grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        ttk.Checkbutton(settingsframe, text="Use Common Ports", variable=self.use_common_ports_var, command=self.togglecommonports).grid(row=1, column=2, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
-        ttk.Label(settings_frame, text="Threads:").grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
-        ttk.Spinbox(settings_frame, from_=1, to=50, textvariable=self.threads_var, width=5).grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(settingsframe, text="Threads:").grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Spinbox(settingsframe, from_=1, to=50, textvariable=self.threads_var, width=5).grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
         
-        scan_button = ttk.Button(settings_frame, text="Start Scan", command=self.start_scan)
-        scan_button.grid(row=2, column=2, padx=5, pady=5)
+        scanbtn = ttk.Button(settingsframe, text="Start Scan", command=self.startscan)
+        scanbtn.grid(row=2, column=2, padx=5, pady=5)
         
-        stop_button = ttk.Button(settings_frame, text="Stop Scan", command=self.stop_scan)
-        stop_button.grid(row=2, column=3, padx=5, pady=5)
+        stopbtn = ttk.Button(settingsframe, text="Stop Scan", command=self.stopscan)
+        stopbtn.grid(row=2, column=3, padx=5, pady=5)
         
-        filter_frame = ttk.Frame(main_frame, padding=5)
-        filter_frame.pack(fill=tk.X, pady=5)
+        filterframe = ttk.Frame(mainframe, padding=5)
+        filterframe.pack(fill=tk.X, pady=5)
         
-        ttk.Label(filter_frame, text="Filter:").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(filter_frame, textvariable=self.filter_var, width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Button(filter_frame, text="Apply Filter", command=self.apply_filter).pack(side=tk.LEFT, padx=5)
+        ttk.Label(filterframe, text="Filter:").pack(side=tk.LEFT, padx=5)
+        ttk.Entry(filterframe, textvariable=self.filter_var, width=20).pack(side=tk.LEFT, padx=5)
+        ttk.Button(filterframe, text="Apply Filter", command=self.applyfilter).pack(side=tk.LEFT, padx=5)
         
-        ttk.Label(filter_frame, text="Sort by:").pack(side=tk.LEFT, padx=5)
-        sort_combo = ttk.Combobox(filter_frame, textvariable=self.sort_var, width=10)
-        sort_combo['values'] = ["ip", "mac", "ports"]
-        sort_combo.pack(side=tk.LEFT, padx=5)
-        ttk.Button(filter_frame, text="Apply Sort", command=self.apply_sort).pack(side=tk.LEFT, padx=5)
+        ttk.Label(filterframe, text="Sort by:").pack(side=tk.LEFT, padx=5)
+        sortcombo = ttk.Combobox(filterframe, textvariable=self.sort_var, width=10)
+        sortcombo['values'] = ["ip", "mac", "ports"]
+        sortcombo.pack(side=tk.LEFT, padx=5)
+        ttk.Button(filterframe, text="Apply Sort", command=self.applysort).pack(side=tk.LEFT, padx=5)
         
-        results_frame = ttk.LabelFrame(main_frame, text="Scan Results", padding=10)
-        results_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        resultsframe = ttk.LabelFrame(mainframe, text="Scan Results", padding=10)
+        resultsframe.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        self.results_tree = ttk.Treeview(results_frame, columns=("ip", "mac", "status", "hostname", "ports"), show="headings")
+        self.results_tree = ttk.Treeview(resultsframe, columns=("ip", "mac", "status", "hostname", "ports"), show="headings")
         self.results_tree.heading("ip", text="IP Address")
         self.results_tree.heading("mac", text="MAC Address")
         self.results_tree.heading("status", text="Status")
@@ -129,27 +129,27 @@ class NetworkScannerGUI:
         self.results_tree.column("hostname", width=150)
         self.results_tree.column("ports", width=300)
         
-        y_scrollbar = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=self.results_tree.yview)
-        self.results_tree.configure(yscrollcommand=y_scrollbar.set)
+        yscrollbar = ttk.Scrollbar(resultsframe, orient=tk.VERTICAL, command=self.results_tree.yview)
+        self.results_tree.configure(yscrollcommand=yscrollbar.set)
         
-        x_scrollbar = ttk.Scrollbar(results_frame, orient=tk.HORIZONTAL, command=self.results_tree.xview)
-        self.results_tree.configure(xscrollcommand=x_scrollbar.set)
+        xscrollbar = ttk.Scrollbar(resultsframe, orient=tk.HORIZONTAL, command=self.results_tree.xview)
+        self.results_tree.configure(xscrollcommand=xscrollbar.set)
         
         self.results_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        y_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        x_scrollbar.pack(side=tk.BOTTOM, fill=tk.X)
+        yscrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        xscrollbar.pack(side=tk.BOTTOM, fill=tk.X)
         
-        self.results_tree.bind("<Double-1>", self.show_host_details)
+        self.results_tree.bind("<Double-1>", self.showhostdetails)
         
-        status_bar = ttk.Frame(main_frame)
-        status_bar.pack(fill=tk.X, pady=5)
+        statusbar = ttk.Frame(mainframe)
+        statusbar.pack(fill=tk.X, pady=5)
         
-        self.progress_bar = ttk.Progressbar(status_bar, mode="indeterminate", length=200)
+        self.progress_bar = ttk.Progressbar(statusbar, mode="indeterminate", length=200)
         self.progress_bar.pack(side=tk.LEFT, padx=5)
         
-        ttk.Label(status_bar, textvariable=self.status_var).pack(side=tk.LEFT, padx=5)
+        ttk.Label(statusbar, textvariable=self.status_var).pack(side=tk.LEFT, padx=5)
     
-    def on_interface_selected(self, event):
+    def onifaceselected(self, event):
         selected = event.widget.get()
         if "(" in selected and ")" in selected:
             ip = selected.split("(")[1].split(")")[0]
@@ -157,46 +157,46 @@ class NetworkScannerGUI:
                 network = ".".join(ip.split(".")[:3]) + ".0/24"
                 self.ip_range_var.set(network)
     
-    def toggle_common_ports(self):
+    def togglecommonports(self):
         if self.use_common_ports_var.get():
             self.port_range_var.set("Common ports")
             for widget in self.root.winfo_children():
                 if isinstance(widget, ttk.Frame):
                     for child in widget.winfo_children():
                         if isinstance(child, ttk.LabelFrame) and child.cget("text") == "Scan Settings":
-                            for grandchild in child.winfo_children():
-                                if isinstance(grandchild, ttk.Entry) and grandchild.grid_info()["row"] == 1:
-                                    grandchild.configure(state="disabled")
+                            for gchild in child.winfo_children():
+                                if isinstance(gchild, ttk.Entry) and gchild.grid_info()["row"] == 1:
+                                    gchild.configure(state="disabled")
         else:
             self.port_range_var.set("1-1024")
             for widget in self.root.winfo_children():
                 if isinstance(widget, ttk.Frame):
                     for child in widget.winfo_children():
                         if isinstance(child, ttk.LabelFrame) and child.cget("text") == "Scan Settings":
-                            for grandchild in child.winfo_children():
-                                if isinstance(grandchild, ttk.Entry) and grandchild.grid_info()["row"] == 1:
-                                    grandchild.configure(state="normal")
+                            for gchild in child.winfo_children():
+                                if isinstance(gchild, ttk.Entry) and gchild.grid_info()["row"] == 1:
+                                    gchild.configure(state="normal")
     
-    def start_scan(self):
+    def startscan(self):
         if self.is_scanning:
             messagebox.showwarning("Scan in Progress", "A scan is already in progress.")
             return
         
-        ip_range = self.ip_range_var.get()
-        if not validate_ip_range(ip_range):
-            messagebox.showerror("Invalid Input", f"Invalid IP range: {ip_range}")
+        iprange = self.ip_range_var.get()
+        if not validate_ip_range(iprange):
+            messagebox.showerror("Invalid Input", f"Invalid IP range: {iprange}")
             return
         
         if self.use_common_ports_var.get():
-            common_ports = get_common_ports()
-            all_ports = []
-            for category, ports in common_ports.items():
-                all_ports.extend(ports)
-            port_ranges = ",".join(map(str, sorted(set(all_ports))))
+            commonports = get_common_ports()
+            allports = []
+            for category, ports in commonports.items():
+                allports.extend(ports)
+            portranges = ",".join(map(str, sorted(set(allports))))
         else:
-            port_ranges = self.port_range_var.get()
-            if not validate_port_range(port_ranges):
-                messagebox.showerror("Invalid Input", f"Invalid port range: {port_ranges}")
+            portranges = self.port_range_var.get()
+            if not validate_port_range(portranges):
+                messagebox.showerror("Invalid Input", f"Invalid port range: {portranges}")
                 return
         
         for item in self.results_tree.get_children():
@@ -207,64 +207,64 @@ class NetworkScannerGUI:
         
         self.is_scanning = True
         self.scan_thread = threading.Thread(
-            target=self.run_scan,
-            args=(ip_range, port_ranges, self.threads_var.get())
+            target=self.runscan,
+            args=(iprange, portranges, self.threads_var.get())
         )
         self.scan_thread.daemon = True
         self.scan_thread.start()
     
-    def run_scan(self, ip_range, port_ranges, threads):
+    def runscan(self, iprange, portranges, threads):
         try:
-            self.root.after(0, lambda: self.status_var.set(f"Starting scan of {ip_range}..."))
+            self.root.after(0, lambda: self.status_var.set(f"Starting scan of {iprange}..."))
 
-            start_time = time.time()
+            starttime = time.time()
 
-            self.root.after(1000, lambda: self.status_var.set(f"Discovering hosts in {ip_range}..."))
+            self.root.after(1000, lambda: self.status_var.set(f"Discovering hosts in {iprange}..."))
 
-            self.scan_results = scan_network(ip_range, port_ranges, threads)
+            self.scan_results = scan_network(iprange, portranges, threads)
 
             self.scan_settings = {
-                'ip_range': ip_range,
-                'ports': port_ranges,
+                'ip_range': iprange,
+                'ports': portranges,
                 'threads': threads
             }
 
-            scan_time = time.time() - start_time
+            scantime = time.time() - starttime
 
-            self.root.after(0, self.update_results, scan_time)
+            self.root.after(0, self.updateresults, scantime)
         except Exception as e:
-            self.root.after(0, self.show_error, str(e))
+            self.root.after(0, self.showerror, str(e))
     
-    def update_results(self, scan_time):
+    def updateresults(self, scantime):
         self.progress_bar.stop()
         
-        self.status_var.set(f"Scan completed in {scan_time:.2f} seconds. Found {len(self.scan_results)} hosts.")
+        self.status_var.set(f"Scan completed in {scantime:.2f} seconds. Found {len(self.scan_results)} hosts.")
         
         for result in self.scan_results:
             ip = result["ip"]
             mac = result.get("mac", "N/A")
             status = result["status"]
             hostname = result.get("hostname", "N/A") or "N/A"
-            open_ports = ", ".join(map(str, result.get("open_ports", []))) or "None"
+            openports = ", ".join(map(str, result.get("open_ports", []))) or "None"
             
-            self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, open_ports))
+            self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, openports))
         
         self.is_scanning = False
     
-    def show_error(self, error_message):
+    def showerror(self, errmsg):
         self.progress_bar.stop()
         self.status_var.set("Error")
         self.is_scanning = False
-        messagebox.showerror("Scan Error", f"An error occurred during the scan:\n{error_message}")
+        messagebox.showerror("Scan Error", f"An error occurred during the scan:\n{errmsg}")
     
-    def stop_scan(self):
+    def stopscan(self):
         if not self.is_scanning:
             return
         
         self.status_var.set("Stopping scan...")
         messagebox.showinfo("Stopping Scan", "The scan will stop after the current operations complete.")
     
-    def reset_scan(self):
+    def resetscan(self):
         if self.is_scanning:
             messagebox.showwarning("Scan in Progress", "Cannot reset while a scan is in progress.")
             return
@@ -283,46 +283,46 @@ class NetworkScannerGUI:
         self.scan_results = []
         self.scan_settings = {}
     
-    def apply_filter(self):
-        filter_text = self.filter_var.get()
-        if not filter_text:
+    def applyfilter(self):
+        filtertext = self.filter_var.get()
+        if not filtertext:
             return
         
         for item in self.results_tree.get_children():
             self.results_tree.delete(item)
         
-        filtered_results = self.scan_results.copy()
+        filtered = self.scan_results.copy()
         
-        if "port=" in filter_text:
-            port_to_filter = int(filter_text.split("=")[1])
-            filtered_results = [r for r in filtered_results if port_to_filter in r.get('open_ports', [])]
+        if "port=" in filtertext:
+            portfilter = int(filtertext.split("=")[1])
+            filtered = [r for r in filtered if portfilter in r.get('open_ports', [])]
         
-        elif "status=" in filter_text:
-            status_to_filter = filter_text.split("=")[1]
-            filtered_results = [r for r in filtered_results if r['status'] == status_to_filter]
+        elif "status=" in filtertext:
+            statusfilter = filtertext.split("=")[1]
+            filtered = [r for r in filtered if r['status'] == statusfilter]
         
-        elif "mac=" in filter_text:
-            mac_to_filter = filter_text.split("=")[1].lower()
-            filtered_results = [r for r in filtered_results if r.get('mac', '').lower() == mac_to_filter]
+        elif "mac=" in filtertext:
+            macfilter = filtertext.split("=")[1].lower()
+            filtered = [r for r in filtered if r.get('mac', '').lower() == macfilter]
         
-        elif "ip=" in filter_text:
-            ip_to_filter = filter_text.split("=")[1]
-            filtered_results = [r for r in filtered_results if r['ip'] == ip_to_filter]
+        elif "ip=" in filtertext:
+            ipfilter = filtertext.split("=")[1]
+            filtered = [r for r in filtered if r['ip'] == ipfilter]
         
-        for result in filtered_results:
+        for result in filtered:
             ip = result["ip"]
             mac = result.get("mac", "N/A")
             status = result["status"]
             hostname = result.get("hostname", "N/A") or "N/A"
-            open_ports = ", ".join(map(str, result.get("open_ports", []))) or "None"
+            openports = ", ".join(map(str, result.get("open_ports", []))) or "None"
             
-            self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, open_ports))
+            self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, openports))
         
-        self.status_var.set(f"Filtered results: {len(filtered_results)} hosts")
+        self.status_var.set(f"Filtered results: {len(filtered)} hosts")
     
-    def apply_sort(self):
-        sort_by = self.sort_var.get()
-        if not sort_by:
+    def applysort(self):
+        sortby = self.sort_var.get()
+        if not sortby:
             return
         
         for item in self.results_tree.get_children():
@@ -330,11 +330,11 @@ class NetworkScannerGUI:
         
         sorted_results = self.scan_results.copy()
         
-        if sort_by == "ip":
+        if sortby == "ip":
             sorted_results = sorted(sorted_results, key=lambda x: [int(part) for part in x['ip'].split('.')])
-        elif sort_by == "mac":
+        elif sortby == "mac":
             sorted_results = sorted(sorted_results, key=lambda x: x.get('mac', ''))
-        elif sort_by == "ports":
+        elif sortby == "ports":
             sorted_results = sorted(sorted_results, key=lambda x: len(x.get('open_ports', [])), reverse=True)
         
         for result in sorted_results:
@@ -342,13 +342,13 @@ class NetworkScannerGUI:
             mac = result.get("mac", "N/A")
             status = result["status"]
             hostname = result.get("hostname", "N/A") or "N/A"
-            open_ports = ", ".join(map(str, result.get("open_ports", []))) or "None"
+            openports = ", ".join(map(str, result.get("open_ports", []))) or "None"
             
-            self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, open_ports))
+            self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, openports))
         
-        self.status_var.set(f"Sorted results by {sort_by}")
+        self.status_var.set(f"Sorted results by {sortby}")
     
-    def show_host_details(self, event):
+    def showhostdetails(self, event):
         item = self.results_tree.selection()[0]
         values = self.results_tree.item(item, "values")
         
@@ -366,93 +366,93 @@ class NetworkScannerGUI:
         if not host:
             return
         
-        details_window = tk.Toplevel(self.root)
-        details_window.title(f"Host Details: {ip}")
-        details_window.geometry("500x400")
-        details_window.minsize(400, 300)
+        detailwin = tk.Toplevel(self.root)
+        detailwin.title(f"Host Details: {ip}")
+        detailwin.geometry("500x400")
+        detailwin.minsize(400, 300)
         
-        details_frame = ttk.Frame(details_window, padding=10)
-        details_frame.pack(fill=tk.BOTH, expand=True)
+        detailframe = ttk.Frame(detailwin, padding=10)
+        detailframe.pack(fill=tk.BOTH, expand=True)
         
-        info_frame = ttk.LabelFrame(details_frame, text="Host Information", padding=10)
-        info_frame.pack(fill=tk.X, pady=5)
+        infoframe = ttk.LabelFrame(detailframe, text="Host Information", padding=10)
+        infoframe.pack(fill=tk.X, pady=5)
         
-        ttk.Label(info_frame, text=f"IP Address: {host['ip']}").pack(anchor=tk.W)
-        ttk.Label(info_frame, text=f"MAC Address: {host.get('mac', 'N/A')}").pack(anchor=tk.W)
-        ttk.Label(info_frame, text=f"Status: {host['status']}").pack(anchor=tk.W)
-        ttk.Label(info_frame, text=f"Hostname: {host.get('hostname', 'N/A') or 'N/A'}").pack(anchor=tk.W)
+        ttk.Label(infoframe, text=f"IP Address: {host['ip']}").pack(anchor=tk.W)
+        ttk.Label(infoframe, text=f"MAC Address: {host.get('mac', 'N/A')}").pack(anchor=tk.W)
+        ttk.Label(infoframe, text=f"Status: {host['status']}").pack(anchor=tk.W)
+        ttk.Label(infoframe, text=f"Hostname: {host.get('hostname', 'N/A') or 'N/A'}").pack(anchor=tk.W)
         
-        ports_frame = ttk.LabelFrame(details_frame, text="Open Ports", padding=10)
-        ports_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+        portsframe = ttk.LabelFrame(detailframe, text="Open Ports", padding=10)
+        portsframe.pack(fill=tk.BOTH, expand=True, pady=5)
         
-        ports_tree = ttk.Treeview(ports_frame, columns=("port", "service"), show="headings")
-        ports_tree.heading("port", text="Port")
-        ports_tree.heading("service", text="Service")
+        portstree = ttk.Treeview(portsframe, columns=("port", "service"), show="headings")
+        portstree.heading("port", text="Port")
+        portstree.heading("service", text="Service")
         
-        ports_tree.column("port", width=100)
-        ports_tree.column("service", width=200)
+        portstree.column("port", width=100)
+        portstree.column("service", width=200)
         
-        scrollbar = ttk.Scrollbar(ports_frame, orient=tk.VERTICAL, command=ports_tree.yview)
-        ports_tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar = ttk.Scrollbar(portsframe, orient=tk.VERTICAL, command=portstree.yview)
+        portstree.configure(yscrollcommand=scrollbar.set)
         
-        ports_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        portstree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
         for port in host.get("open_ports", []):
             service = host.get("services", {}).get(port, "unknown")
-            ports_tree.insert("", tk.END, values=(port, service))
+            portstree.insert("", tk.END, values=(port, service))
         
-        ttk.Button(details_frame, text="Close", command=details_window.destroy).pack(pady=10)
+        ttk.Button(detailframe, text="Close", command=detailwin.destroy).pack(pady=10)
     
-    def show_network_graph(self):
+    def shownetgraph(self):
         if not self.scan_results:
             messagebox.showinfo("No Data", "No scan results to visualize.")
             return
         
-        graph_window = tk.Toplevel(self.root)
-        graph_window.title("Network Graph")
-        graph_window.geometry("800x600")
+        graphwin = tk.Toplevel(self.root)
+        graphwin.title("Network Graph")
+        graphwin.geometry("800x600")
         
-        graph_frame = ttk.Frame(graph_window, padding=10)
-        graph_frame.pack(fill=tk.BOTH, expand=True)
+        graphframe = ttk.Frame(graphwin, padding=10)
+        graphframe.pack(fill=tk.BOTH, expand=True)
         
         fig = plt.Figure(figsize=(10, 8), dpi=100)
         ax = fig.add_subplot(111)
         
         G = nx.Graph()
         
-        router_ip = ".".join(self.scan_results[0]["ip"].split(".")[:3]) + ".1"
-        G.add_node(router_ip, type="router")
+        routerip = ".".join(self.scan_results[0]["ip"].split(".")[:3]) + ".1"
+        G.add_node(routerip, type="router")
         
         for result in self.scan_results:
             if result["status"] in ["up", "up (ICMP)"]:
                 G.add_node(result["ip"], type="host")
-                G.add_edge(router_ip, result["ip"])
+                G.add_edge(routerip, result["ip"])
                 
                 for port in result.get("open_ports", []):
-                    port_node = f"{result['ip']}:{port}"
-                    G.add_node(port_node, type="port")
-                    G.add_edge(result["ip"], port_node)
+                    portnode = f"{result['ip']}:{port}"
+                    G.add_node(portnode, type="port")
+                    G.add_edge(result["ip"], portnode)
         
         pos = nx.spring_layout(G, seed=42)
         
-        router_nodes = [n for n, d in G.nodes(data=True) if d.get("type") == "router"]
-        host_nodes = [n for n, d in G.nodes(data=True) if d.get("type") == "host"]
-        port_nodes = [n for n, d in G.nodes(data=True) if d.get("type") == "port"]
+        routernodes = [n for n, d in G.nodes(data=True) if d.get("type") == "router"]
+        hostnodes = [n for n, d in G.nodes(data=True) if d.get("type") == "host"]
+        portnodes = [n for n, d in G.nodes(data=True) if d.get("type") == "port"]
         
-        nx.draw_networkx_nodes(G, pos, nodelist=router_nodes, node_color="red", node_size=500, ax=ax)
-        nx.draw_networkx_nodes(G, pos, nodelist=host_nodes, node_color="skyblue", node_size=300, ax=ax)
-        nx.draw_networkx_nodes(G, pos, nodelist=port_nodes, node_color="green", node_size=100, ax=ax)
+        nx.draw_networkx_nodes(G, pos, nodelist=routernodes, node_color="red", node_size=500, ax=ax)
+        nx.draw_networkx_nodes(G, pos, nodelist=hostnodes, node_color="skyblue", node_size=300, ax=ax)
+        nx.draw_networkx_nodes(G, pos, nodelist=portnodes, node_color="green", node_size=100, ax=ax)
         
         nx.draw_networkx_edges(G, pos, ax=ax)
         
-        router_labels = {n: n for n in router_nodes}
-        host_labels = {n: n for n in host_nodes}
-        port_labels = {n: n.split(":")[-1] for n in port_nodes}
+        routerlabels = {n: n for n in routernodes}
+        hostlabels = {n: n for n in hostnodes}
+        portlabels = {n: n.split(":")[-1] for n in portnodes}
         
-        nx.draw_networkx_labels(G, pos, labels=router_labels, font_size=10, ax=ax)
-        nx.draw_networkx_labels(G, pos, labels=host_labels, font_size=8, ax=ax)
-        nx.draw_networkx_labels(G, pos, labels=port_labels, font_size=6, ax=ax)
+        nx.draw_networkx_labels(G, pos, labels=routerlabels, font_size=10, ax=ax)
+        nx.draw_networkx_labels(G, pos, labels=hostlabels, font_size=8, ax=ax)
+        nx.draw_networkx_labels(G, pos, labels=portlabels, font_size=6, ax=ax)
         
         ax.plot([], [], "ro", label="Router")
         ax.plot([], [], "o", color="skyblue", label="Host")
@@ -461,43 +461,43 @@ class NetworkScannerGUI:
         
         ax.set_axis_off()
         
-        canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+        canvas = FigureCanvasTkAgg(fig, master=graphframe)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        ttk.Button(graph_frame, text="Close", command=graph_window.destroy).pack(pady=10)
+        ttk.Button(graphframe, text="Close", command=graphwin.destroy).pack(pady=10)
     
-    def show_port_distribution(self):
+    def showportdist(self):
         if not self.scan_results:
             messagebox.showinfo("No Data", "No scan results to visualize.")
             return
         
-        all_ports = []
+        allports = []
         for result in self.scan_results:
-            all_ports.extend(result.get("open_ports", []))
+            allports.extend(result.get("open_ports", []))
         
-        if not all_ports:
+        if not allports:
             messagebox.showinfo("No Data", "No open ports found in scan results.")
             return
         
-        port_counts = {}
-        for port in all_ports:
-            port_counts[port] = port_counts.get(port, 0) + 1
+        portcounts = {}
+        for port in allports:
+            portcounts[port] = portcounts.get(port, 0) + 1
         
-        sorted_ports = sorted(port_counts.items(), key=lambda x: x[1], reverse=True)
+        sortedports = sorted(portcounts.items(), key=lambda x: x[1], reverse=True)
         
-        graph_window = tk.Toplevel(self.root)
-        graph_window.title("Port Distribution")
-        graph_window.geometry("800x600")
+        graphwin = tk.Toplevel(self.root)
+        graphwin.title("Port Distribution")
+        graphwin.geometry("800x600")
         
-        graph_frame = ttk.Frame(graph_window, padding=10)
-        graph_frame.pack(fill=tk.BOTH, expand=True)
+        graphframe = ttk.Frame(graphwin, padding=10)
+        graphframe.pack(fill=tk.BOTH, expand=True)
         
         fig = plt.Figure(figsize=(10, 8), dpi=100)
         ax = fig.add_subplot(111)
         
-        ports = [p[0] for p in sorted_ports[:15]]
-        counts = [p[1] for p in sorted_ports[:15]]
+        ports = [p[0] for p in sortedports[:15]]
+        counts = [p[1] for p in sortedports[:15]]
         
         bars = ax.bar(ports, counts, color="skyblue")
         
@@ -517,13 +517,13 @@ class NetworkScannerGUI:
             ax.text(bar.get_x() + bar.get_width()/2., height + 0.1,
                     service, ha="center", va="bottom", rotation=45)
         
-        canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+        canvas = FigureCanvasTkAgg(fig, master=graphframe)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        ttk.Button(graph_frame, text="Close", command=graph_window.destroy).pack(pady=10)
+        ttk.Button(graphframe, text="Close", command=graphwin.destroy).pack(pady=10)
     
-    def load_session_dialog(self):
+    def loadsessiondialog(self):
         filename = filedialog.askopenfilename(
             title="Load Session",
             filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
@@ -547,9 +547,9 @@ class NetworkScannerGUI:
                 mac = result.get("mac", "N/A")
                 status = result["status"]
                 hostname = result.get("hostname", "N/A") or "N/A"
-                open_ports = ", ".join(map(str, result.get("open_ports", []))) or "None"
+                openports = ", ".join(map(str, result.get("open_ports", []))) or "None"
                 
-                self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, open_ports))
+                self.results_tree.insert("", tk.END, values=(ip, mac, status, hostname, openports))
             
             self.status_var.set(f"Loaded session from {filename}")
             messagebox.showinfo("Session Loaded", f"Successfully loaded session from {filename}")
@@ -557,7 +557,7 @@ class NetworkScannerGUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load session: {e}")
     
-    def save_session_dialog(self):
+    def savesessiondialog(self):
         if not self.scan_results:
             messagebox.showinfo("No Data", "No scan results to save.")
             return
@@ -579,14 +579,14 @@ class NetworkScannerGUI:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save session: {e}")
     
-    def export_results(self, format_type):
+    def exportresults(self, formattype):
         if not self.scan_results:
             messagebox.showinfo("No Data", "No scan results to export.")
             return
         
         ensure_directory_exists("results")
         
-        if format_type == "csv":
+        if formattype == "csv":
             filename = filedialog.asksaveasfilename(
                 title="Export Results as CSV",
                 defaultextension=".csv",
@@ -605,7 +605,7 @@ class NetworkScannerGUI:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to export results: {e}")
         
-        elif format_type == "json":
+        elif formattype == "json":
             filename = filedialog.asksaveasfilename(
                 title="Export Results as JSON",
                 defaultextension=".json",
@@ -624,8 +624,8 @@ class NetworkScannerGUI:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to export results: {e}")
     
-    def show_about(self):
-        about_text = """
+    def showabout(self):
+        abouttext = """
         Network Scanner
 
         A comprehensive network scanner application capable of discovering devices,
@@ -641,7 +641,7 @@ class NetworkScannerGUI:
         Created with Python and Scapy
         """
         
-        messagebox.showinfo("About Network Scanner", about_text)
+        messagebox.showinfo("About Network Scanner", abouttext)
 
 def main():
     root = tk.Tk()
