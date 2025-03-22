@@ -10,111 +10,111 @@ from typing import List, Dict, Any, Union, Optional
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", message=".*MAC address to reach destination not found.*")
 
-def arp_scan(ip_range: str) -> List[Dict[str, str]]:
+def arp_scan(iprange: str) -> List[Dict[str, str]]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        arp_request = scapy.ARP(pdst=ip_range)
+        arpreq = scapy.ARP(pdst=iprange)
         broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
-        arp_request_broadcast = broadcast / arp_request
-        answered_list = scapy.srp(arp_request_broadcast, timeout=5, verbose=False)[0]
-    clients_list = []
-    for element in answered_list:
-        client_dict = {"ip": element[1].psrc, "mac": element[1].hwsrc}
-        clients_list.append(client_dict)
-    return clients_list
+        arpreqbc = broadcast / arpreq
+        answeredlist = scapy.srp(arpreqbc, timeout=5, verbose=False)[0]
+    clientslist = []
+    for element in answeredlist:
+        clientdict = {"ip": element[1].psrc, "mac": element[1].hwsrc}
+        clientslist.append(clientdict)
+    return clientslist
 
-def ping_scan(ip_address: str) -> bool:
+def ping_scan(ipaddress: str) -> bool:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        icmp_request = scapy.IP(dst=ip_address) / scapy.ICMP()
-        response = scapy.sr1(icmp_request, timeout=2, verbose=False)
+        icmpreq = scapy.IP(dst=ipaddress) / scapy.ICMP()
+        response = scapy.sr1(icmpreq, timeout=2, verbose=False)
     return response is not None
 
 def scan_host(ip: Union[str, ipaddress.IPv4Address]) -> Dict[str, Any]:
-    ip_str = str(ip)
-    arp_result = arp_scan(ip_str)
-    if arp_result:
-        return {"ip": ip_str, "mac": arp_result[0]['mac'], "status": "up"}
-    elif ping_scan(ip_str):
-        return {"ip": ip_str, "mac": None, "status": "up (ICMP)"}
+    ipstr = str(ip)
+    arpresult = arp_scan(ipstr)
+    if arpresult:
+        return {"ip": ipstr, "mac": arpresult[0]['mac'], "status": "up"}
+    elif ping_scan(ipstr):
+        return {"ip": ipstr, "mac": None, "status": "up (ICMP)"}
     else:
-        return {"ip": ip_str, "mac": None, "status": "down"}
+        return {"ip": ipstr, "mac": None, "status": "down"}
 
-def parallel_scan(ip_range: str, max_workers: int = 10) -> List[Dict[str, Any]]:
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_ip = {executor.submit(scan_host, ip): ip for ip in ipaddress.ip_network(ip_range).hosts()}
+def parallel_scan(iprange: str, maxworkers: int = 10) -> List[Dict[str, Any]]:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=maxworkers) as executor:
+        futuretoip = {executor.submit(scan_host, ip): ip for ip in ipaddress.ip_network(iprange).hosts()}
         results = []
-        for future in concurrent.futures.as_completed(future_to_ip):
+        for future in concurrent.futures.as_completed(futuretoip):
             result = future.result()
             results.append(result)
         return results
 
-def send_syn(ip_address: str, port: int) -> Optional[scapy.packet.Packet]:
+def send_syn(ipaddr: str, port: int) -> Optional[scapy.packet.Packet]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        ip = scapy.IP(dst=ip_address)
+        ip = scapy.IP(dst=ipaddr)
         tcp = scapy.TCP(dport=port, flags="S")
         packet = ip / tcp
         response = scapy.sr1(packet, timeout=1, verbose=False)
     return response
 
-def is_port_open(ip_address: str, port: int) -> bool:
-    response = send_syn(ip_address, port)
+def is_port_open(ipaddr: str, port: int) -> bool:
+    response = send_syn(ipaddr, port)
     if response and response.haslayer(scapy.TCP):
         if response[scapy.TCP].flags == "SA":
-            rst_packet = scapy.IP(dst=ip_address) / scapy.TCP(
+            rstpacket = scapy.IP(dst=ipaddr) / scapy.TCP(
                 dport=port, 
                 sport=response[scapy.TCP].dport, 
                 seq=response[scapy.TCP].ack, 
                 ack=response[scapy.TCP].seq + 1, 
                 flags="R"
             )
-            scapy.send(rst_packet, verbose=False)
+            scapy.send(rstpacket, verbose=False)
             return True
     return False
 
-def is_port_open_with_retry(ip_address: str, port: int, retries: int = 3) -> bool:
+def is_port_open_with_retry(ipaddr: str, port: int, retries: int = 3) -> bool:
     for _ in range(retries):
-        if is_port_open(ip_address, port):
+        if is_port_open(ipaddr, port):
             return True
     return False
 
-def scan_ports(ip_address: str, port_ranges: str) -> List[int]:
-    open_ports = []
-    for port_range in port_ranges.split(","):
-        port_range = port_range.strip()
-        if "-" in port_range:
-            start_port, end_port = map(int, port_range.split("-"))
-            for port in range(start_port, end_port + 1):
-                if is_port_open(ip_address, port):
-                    open_ports.append(port)
+def scan_ports(ipaddr: str, portranges: str) -> List[int]:
+    openports = []
+    for portrange in portranges.split(","):
+        portrange = portrange.strip()
+        if "-" in portrange:
+            startport, endport = map(int, portrange.split("-"))
+            for port in range(startport, endport + 1):
+                if is_port_open(ipaddr, port):
+                    openports.append(port)
         else:
-            port = int(port_range)
-            if is_port_open(ip_address, port):
-                open_ports.append(port)
-    return open_ports
+            port = int(portrange)
+            if is_port_open(ipaddr, port):
+                openports.append(port)
+    return openports
 
-def parallel_port_scan(ip_address: str, port_ranges: str, max_workers: int = 20) -> List[int]:
-    ports_to_scan = []
-    for port_range in port_ranges.split(","):
-        port_range = port_range.strip()
-        if "-" in port_range:
-            start_port, end_port = map(int, port_range.split("-"))
-            ports_to_scan.extend(range(start_port, end_port + 1))
+def parallel_port_scan(ipaddr: str, portranges: str, maxworkers: int = 20) -> List[int]:
+    portstoscan = []
+    for portrange in portranges.split(","):
+        portrange = portrange.strip()
+        if "-" in portrange:
+            startport, endport = map(int, portrange.split("-"))
+            portstoscan.extend(range(startport, endport + 1))
         else:
-            ports_to_scan.append(int(port_range))
+            portstoscan.append(int(portrange))
     
-    open_ports = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_port = {executor.submit(is_port_open, ip_address, port): port for port in ports_to_scan}
-        for future in concurrent.futures.as_completed(future_to_port):
+    openports = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=maxworkers) as executor:
+        futuretoport = {executor.submit(is_port_open, ipaddr, port): port for port in portstoscan}
+        for future in concurrent.futures.as_completed(futuretoport):
             if future.result():
-                open_ports.append(future_to_port[future])
+                openports.append(futuretoport[future])
     
-    return sorted(open_ports)
+    return sorted(openports)
 
-def ack_scan(ip_address: str, port: int) -> Optional[str]:
-    ip = scapy.IP(dst=ip_address)
+def ack_scan(ipaddr: str, port: int) -> Optional[str]:
+    ip = scapy.IP(dst=ipaddr)
     tcp = scapy.TCP(dport=port, flags="A")
     packet = ip / tcp
     response = scapy.sr1(packet, timeout=1, verbose=False)
@@ -135,47 +135,47 @@ def get_service_name(port: int) -> str:
     except (socket.error, OSError):
         return "unknown"
 
-def get_hostname(ip_address: str) -> Optional[str]:
+def get_hostname(ipaddr: str) -> Optional[str]:
     try:
-        return socket.gethostbyaddr(ip_address)[0]
+        return socket.gethostbyaddr(ipaddr)[0]
     except (socket.herror, socket.gaierror):
         return None
 
-def scan_target(ip_address: str, port_ranges: str, max_workers: int = 20) -> Dict[str, Any]:
+def scan_target(ipaddr: str, portranges: str, maxworkers: int = 20) -> Dict[str, Any]:
     try:
-        host_result = scan_host(ip_address)
-        if host_result["status"] in ["up", "up (ICMP)"]:
+        hostresult = scan_host(ipaddr)
+        if hostresult["status"] in ["up", "up (ICMP)"]:
             try:
-                open_ports = parallel_port_scan(ip_address, port_ranges, max_workers)
+                openports = parallel_port_scan(ipaddr, portranges, maxworkers)
             except Exception as e:
                 print(f"Error during port scan: {e}")
-                open_ports = []
+                openports = []
 
             services = {}
-            for port in open_ports:
+            for port in openports:
                 try:
                     services[port] = get_service_name(port)
                 except Exception:
                     services[port] = "unknown"
 
             try:
-                hostname = get_hostname(ip_address)
+                hostname = get_hostname(ipaddr)
             except Exception:
                 hostname = None
 
-            host_result["open_ports"] = open_ports
-            host_result["services"] = services
-            host_result["hostname"] = hostname
+            hostresult["open_ports"] = openports
+            hostresult["services"] = services
+            hostresult["hostname"] = hostname
         else:
-            host_result["open_ports"] = []
-            host_result["services"] = {}
-            host_result["hostname"] = None
+            hostresult["open_ports"] = []
+            hostresult["services"] = {}
+            hostresult["hostname"] = None
 
-        return host_result
+        return hostresult
     except Exception as e:
-        print(f"Error scanning target {ip_address}: {e}")
+        print(f"Error scanning target {ipaddr}: {e}")
         return {
-            "ip": ip_address,
+            "ip": ipaddr,
             "mac": None,
             "status": "error",
             "hostname": None,
@@ -183,24 +183,24 @@ def scan_target(ip_address: str, port_ranges: str, max_workers: int = 20) -> Dic
             "services": {}
         }
 
-def scan_network(ip_range: str, port_ranges: str, max_workers: int = 10) -> List[Dict[str, Any]]:
+def scan_network(iprange: str, portranges: str, maxworkers: int = 10) -> List[Dict[str, Any]]:
     try:
-        print(f"Starting host discovery on {ip_range}...")
-        host_results = parallel_scan(ip_range, max_workers)
-        print(f"Found {len(host_results)} hosts. Starting port scans...")
+        print(f"Starting host discovery on {iprange}...")
+        hostresults = parallel_scan(iprange, maxworkers)
+        print(f"Found {len(hostresults)} hosts. Starting port scans...")
 
-        active_hosts = [h for h in host_results if h["status"] in ["up", "up (ICMP)"]]
-        print(f"Active hosts: {len(active_hosts)}")
+        activehosts = [h for h in hostresults if h["status"] in ["up", "up (ICMP)"]]
+        print(f"Active hosts: {len(activehosts)}")
 
-        for i, host in enumerate(host_results):
+        for i, host in enumerate(hostresults):
             if host["status"] in ["up", "up (ICMP)"]:
-                print(f"Scanning ports on {host['ip']} ({i+1}/{len(active_hosts)})...")
+                print(f"Scanning ports on {host['ip']} ({i+1}/{len(activehosts)})...")
 
                 try:
-                    open_ports = parallel_port_scan(host["ip"], port_ranges, max_workers)
+                    openports = parallel_port_scan(host["ip"], portranges, maxworkers)
 
                     services = {}
-                    for port in open_ports:
+                    for port in openports:
                         try:
                             services[port] = get_service_name(port)
                         except Exception:
@@ -211,12 +211,12 @@ def scan_network(ip_range: str, port_ranges: str, max_workers: int = 10) -> List
                     except Exception:
                         hostname = None
 
-                    host["open_ports"] = open_ports
+                    host["open_ports"] = openports
                     host["services"] = services
                     host["hostname"] = hostname
 
-                    if open_ports:
-                        print(f"  Found {len(open_ports)} open ports: {', '.join(map(str, open_ports))}")
+                    if openports:
+                        print(f"  Found {len(openports)} open ports: {', '.join(map(str, openports))}")
                     else:
                         print(f"  No open ports found")
 
@@ -230,11 +230,11 @@ def scan_network(ip_range: str, port_ranges: str, max_workers: int = 10) -> List
                 host["services"] = {}
                 host["hostname"] = None
 
-        return host_results
+        return hostresults
     except Exception as e:
         print(f"Error during network scan: {e}")
         return [{
-            "ip": ip_range,
+            "ip": iprange,
             "mac": None,
             "status": "error",
             "hostname": None,
